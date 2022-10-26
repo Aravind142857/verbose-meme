@@ -11,35 +11,25 @@ import java.util.concurrent.TimeUnit;
 public class Main {
     private static ArrayList<JFrame> windows = new ArrayList<>();
     private static int windowNumber = 1;
-    public final String prompt;
+    //public String prompt;
     private String windowName = "";
     private static JFrame curr = new JFrame();
     private final FileX explorer = new FileX();
+    private final String BRIGHT_WHITE = "u001B[1;37m";
+    private final String ANSI_RESET = "u001B[0m";
+    private final String BRIGHT_CYAN = "u001B[1;36m";
     public Main() {
-        prompt = "BRUH$ |" + explorer.getWorkingDirectory() + "| ";
+        //prompt = BRIGHT_WHITE + "BRUH$ |" + explorer.getWorkingDirectory() + "| " + ANSI_RESET;
         //this.windowName = "Window " + windowNumber + " of " + windowNumber;
     }
-    public void renameWindows() {
-        for (JFrame window: windows) {
-            window.setName(window.getName().replaceAll("(of\s[0-9]*)", "of " + String.valueOf(windowNumber)));
-        }
-    }
-    public void addWindow(JFrame frame) {
-        windows.add(frame);
-        renameWindows();
-        curr = windows.get(windows.size() - 1);
-    }
-    public void deleteWindow(int windowNum) {
-        /* Remove windowNum */
-        windowNum--;
-        /* Rename all windows */
+    public String getPrompt() {
+        return (BRIGHT_CYAN + "BRUH$ |" + explorer.getWorkingDirectory() + "| " + ANSI_RESET);
     }
 
     public String runCommand(String command) {
 
         //String command;
-        String prompter = prompt + "\s";
-        System.out.print(prompter + "|" + explorer.getWorkingDirectory() + "| ");
+        //String prompter = prompt + "\s";
         //Scanner read = new Scanner(System.in);
         //read.useDelimiter("\n");
         //command = read.next();

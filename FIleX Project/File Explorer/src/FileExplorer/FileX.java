@@ -40,6 +40,7 @@ public class FileX implements myExplorer {
             }
             else {
                 currDirectory = newPath.substring(newPath.lastIndexOf("/") + 1);
+                System.out.println(currDirectory);
             }
 
     }
@@ -81,13 +82,6 @@ public class FileX implements myExplorer {
         changeWorkingDirectory(currPath.substring(0, currPath.lastIndexOf("/")));
     }
 
-    private boolean filterFiles(File f) {
-        if (!(f.isDirectory() && !f.isHidden()) || f.isFile()) {
-            return true;
-        } else {
-            return false;
-        }
-    }
     /**
      * Return a list of all files in the current directory
      * @return
@@ -156,26 +150,36 @@ public class FileX implements myExplorer {
     }
 
     private String format(String start, File f) throws IOException {
-        String ANSI_RESET = "\u001B[0m";
-        String ANSI_BLACK = "\u001B[30m";
-        String ANSI_RED = "\u001B[31m";
-        String ANSI_GREEN = "\u001B[32m";
-        String ANSI_YELLOW = "\u001B[33m";
-        String ANSI_BLUE = "\u001B[34m";
-        String ANSI_PURPLE = "\u001B[35m";
-        String ANSI_CYAN = "\u001B[36m";
-        String ANSI_WHITE = "\u001B[37m";
+        String ANSI_RESET = "u001B[0m";
+
+        String ANSI_BLACK = "u001B[30m";
+        String ANSI_RED = "u001B[31m";
+        String ANSI_GREEN = "u001B[32m";
+        String ANSI_YELLOW = "u001B[33m";
+        String ANSI_BLUE = "u001B[34m";
+        String ANSI_PURPLE = "u001B[35m";
+        String ANSI_CYAN = "u001B[36m";
+        String ANSI_WHITE = "u001B[37m";
+
+        String BRIGHT_BLACK = "u001B[1;30m";
+        String BRIGHT_RED = "u001B[1;31m";
+        String BRIGHT_GREEN = "u001B[1;32m";
+        String BRIGHT_YELLOW = "u001B[1;33m";
+        String BRIGHT_BLUE = "u001B[1;34m";
+        String BRIGHT_PURPLE = "u001B[1;35m";
+        String BRIGHT_CYAN = "u001B[1;36m";
+        String BRIGHT_WHITE = "u001B[1;37m";
 
         if (f.isHidden()) {
-            return (start + ANSI_BLACK + f + ANSI_RESET);
+            return (start + ANSI_RED + f + ANSI_RESET);
         }
 
         else if (f.isDirectory()) {
-            return (start + ANSI_BLUE + f.getCanonicalFile() + ANSI_RESET );
+            return (start + BRIGHT_BLUE + f.getCanonicalFile() + ANSI_RESET );
         }
 
         else if (f.isFile()) {
-            return (start + ANSI_GREEN + f.getName() + ANSI_RESET);
+            return (start + BRIGHT_GREEN + f.getName() + ANSI_RESET);
         }
         else {
             return "";
@@ -192,7 +196,7 @@ public class FileX implements myExplorer {
         if (cmd.endsWith("/")) {
             cmd = cmd.substring(0, cmd.length() - 1);
         }
-        if (cmd.matches("[c][d].*")) {
+        if (cmd.matches("[c][d]\s.+")) {
             /* Call moveInward or changeWorkingDirectory or toRoot() or moveOutward*/
             if (cmd.substring(2).replaceAll("\s", "").equals("..")) {
                 moveOutward();
@@ -211,7 +215,7 @@ public class FileX implements myExplorer {
         else if (cmd.matches("pwd")) {
             /* Call getWorkingDirectory() */
             //System.out.println(getWorkingPath());
-            return (getWorkingPath());
+            return ("u001B[1;35m" + getWorkingPath());
         }
         else if (cmd.replaceAll("\s", "").equals("ls")) {
             /* Call print(getWorkingDirectory()) */
