@@ -2,8 +2,13 @@ package FileExplorer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class FileX implements myExplorer {
     private String currPath;
@@ -14,7 +19,7 @@ public class FileX implements myExplorer {
         currPath = System.getProperty("user.home");
         currDirectory = "~";
     }
-
+    /**__________________________________________________________*/
     /**
      * Returns the Current Working Directory
      */
@@ -22,11 +27,12 @@ public class FileX implements myExplorer {
     public String getWorkingPath() {
         return currPath;
     }
-
+    /**__________________________________________________________*/
     @Override
     public String getWorkingDirectory() {
         return currDirectory;
     }
+    /**__________________________________________________________*/
     /**
      * Changes the current working directory to
      *
@@ -38,13 +44,15 @@ public class FileX implements myExplorer {
             if (newPath.equals(System.getProperty("user.home"))) {
                 currDirectory = "~";
             }
+            else if (newPath.equals(Path.of(System.getProperty("user.home")).getRoot().toString())) {
+                currDirectory = "/";
+            }
             else {
                 currDirectory = newPath.substring(newPath.lastIndexOf("/") + 1);
-                System.out.println(currDirectory);
             }
 
     }
-
+    /**__________________________________________________________*/
     /**
      * Moves inward and sets current Working Directory to @param inLoc
      *
@@ -61,7 +69,7 @@ public class FileX implements myExplorer {
         if (fp.isDirectory()) {
             if (inLoc.charAt(0) == '~') {
                 inLoc = inLoc.substring(2);
-                toRoot();
+                toHome();
             }
             changeWorkingDirectory(getWorkingPath() + "/" + inLoc.replaceAll("[.][/]", ""));
         }
@@ -72,7 +80,7 @@ public class FileX implements myExplorer {
             throw new MyException("cd", error2, fp);
         }
     }
-
+    /**__________________________________________________________*/
     /**
      * Moves outward and sets current Working Directory to inLoc
      *
@@ -81,11 +89,12 @@ public class FileX implements myExplorer {
     public void moveOutward() {
         changeWorkingDirectory(currPath.substring(0, currPath.lastIndexOf("/")));
     }
-
+    /**__________________________________________________________*/
     /**
      * Return a list of all files in the current directory
      * @return
      */
+
     @Override
     public File[] getFiles(String currPath) {
         File currFile = new File(currPath);
@@ -95,7 +104,7 @@ public class FileX implements myExplorer {
         }
         return toReturn;
     }
-
+    /**__________________________________________________________*/
     /**
      * Prints all files in the current directory
      *
@@ -103,16 +112,40 @@ public class FileX implements myExplorer {
      * @return
      */
     @Override
-    public String print(String currentPath) throws IOException {
+    public String print(String currentPath, boolean format) throws IOException {
         File[] list = getFiles(currentPath);
         String toReturn = "";
         for (File f: list) {
-            toReturn += format(f) + "\n";
+            toReturn += ((format)?(format(f) + "\n") : convertFileToString(f));
         }
         toReturn = toReturn.substring(0, toReturn.length() - 1);
         return toReturn;
     }
 
+    private String convertFileToString(File f) {
+        if (f.isDirectory()) {
+            return f.getName() + "\n";
+        }
+        else if (f.isFile() && f.getName().lastIndexOf(".")!= -1) {
+            String fileName = f.getName();
+            return fileName + fileName.substring(fileName.lastIndexOf(".")) + "\n";
+        }
+        return "";
+    }
+    /** non-hidden directory? */
+    private Predicate<File> isNonHiddenPredicate() {
+        return p -> p.isDirectory() && !p.isHidden();
+    }
+
+
+    /**__________________________________________________________*/
+    /** Return a String with all directories with current directory */
+    public String printDirectories(String currentPath){
+        File[] list = getFiles(currentPath);
+        //list = Arrays.stream(list).filter(File::isDirectory).collect(Collectors.toList()).toArray(new File[]{});
+        return String.join("\n",  Arrays.stream(list).toList().stream().filter(isNonHiddenPredicate()).map(f -> f.getName()).collect(Collectors.toList()).toArray(new String[]{}));
+    }
+    /**__________________________________________________________*/
     /**
      * Prints all files in current and sub-directories
      *  @param beginning
@@ -131,15 +164,19 @@ public class FileX implements myExplorer {
                 }
             }
         }
-       /*
-        if (toReturn.length() > 1) {
-            toReturn = toReturn.substring(0, toReturn.length() - 1);
-            return toReturn;
-        }
-        */
         return toReturn;
     }
-
+    public ArrayList<String> autocompleteFromIncompleteString (String command) {
+        File[] files = getFiles(currPath);
+        ArrayList<String> temp = new ArrayList<String>();
+        for (File f: files) {
+            if (f.toString().matches(command + ".*")) {
+                temp.add(f.toString());
+            }
+        }
+        return temp;
+    }
+    /**__________________________________________________________*/
     /**
      * Formats each String while outputting
      *
@@ -148,7 +185,8 @@ public class FileX implements myExplorer {
     private String format(File f) throws IOException {
         return format("", f);
     }
-
+    /**__________________________________________________________*/
+    /** Does the formatting */
     private String format(String start, File f) throws IOException {
         String ANSI_RESET = "u001B[0m";
 
@@ -185,30 +223,44 @@ public class FileX implements myExplorer {
             return "";
         }
     }
-
+    /**__________________________________________________________*/
+    /** Sets the current working Directory to Home */
     @Override
-    public void toRoot() {
+    public void toHome() {
         changeWorkingDirectory(System.getProperty("user.home"));
     }
 
+    /**
+     * Navigate back to the root directory
+     */
+    @Override
+    public void toRoot() {
+        changeWorkingDirectory(Path.of(System.getProperty("user.home")).getRoot().toString());
+    }
+    /** Parses the user input and calls the corresponding method */
+    /**__________________________________________________________*/
     @Override
     public String convert(String cmd) throws MyException, IOException {
-        if (cmd.endsWith("/")) {
-            cmd = cmd.substring(0, cmd.length() - 1);
-        }
-        if (cmd.matches("[c][d]\s.+")) {
-            /* Call moveInward or changeWorkingDirectory or toRoot() or moveOutward*/
+
+        if (cmd.matches("[c][d].+")) {
+            /* Call moveInward or changeWorkingDirectory or toHome() or moveOutward*/
+            if (cmd.substring(2).replaceAll("\s", "").matches("/")) {
+                toRoot();
+                return "";
+            }
+            if (cmd.endsWith("/")) {
+                cmd = cmd.substring(0, cmd.length() - 1);
+            }
             if (cmd.substring(2).replaceAll("\s", "").equals("..")) {
                 moveOutward();
             }
             else if (cmd.substring(2).replaceAll("\s", "").equals("~")) {
-                toRoot();
+                toHome();
             }
-            else if (cmd.substring(2).replaceAll("\s", "").matches("\\.\\..*")) {
+            else if (cmd.substring(2).replaceAll("\s", "").matches("\\.\\..+")) {
                 moveOutward();
                 moveInward(cmd.substring(5));
-            }
-            else { /* Move Inward */
+            } else { /* Move Inward */
                 moveInward(cmd.substring(3));
             }
         }
@@ -219,18 +271,22 @@ public class FileX implements myExplorer {
         }
         else if (cmd.replaceAll("\s", "").equals("ls")) {
             /* Call print(getWorkingDirectory()) */
-            return print(getWorkingPath());
+            return print(getWorkingPath(), true);
 
         }
         else if (cmd.equals("ls -aR")) {
             /* Call printAll(getWorkingPath()) */
             return printAll("\t", getWorkingPath());
         }
-        else {
-            // TODO: New Exception -- Invalid command (command not found: <Input>)
+        else if (cmd.equals("ls -d */")) {
+            return printDirectories(getWorkingPath());
+        } else {
+            throw new MyException(cmd, "Invalid method", new File(getWorkingPath()));
         }
         return "";
     }
+    /**__________________________________________________________*/
+
 }
 /**
  * TODO:    Remove (rm).

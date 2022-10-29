@@ -22,11 +22,11 @@ public class ColorPane extends JTextPane {
     static final Color B_Cyan    = Color.getHSBColor( 0.500f, 1.000f, 1.000f );
     static final Color B_White   = Color.getHSBColor( 0.000f, 0.000f, 1.000f );
     static final Color cReset    = Color.getHSBColor( 0.000f, 0.000f, 1.000f );
-    static Color colorCurrent    = D_Black;
+    Color colorCurrent;
     String remaining = "";
 
     public void insert(Color c, String s) {
-
+        colorCurrent = ensureBackgroundColorNotEqualToForegroundColor(getBackground());
         StyleContext sc = StyleContext.getDefaultStyleContext();
         AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, c);
         int len = getDocument().getLength(); // same value as getText().length();
@@ -75,7 +75,8 @@ public class ColorPane extends JTextPane {
                 }
                 else {
                     tmpString = addString.substring(aPos,mIndex+1);
-                    colorCurrent = getANSIColor(tmpString);
+                    colorCurrent = ensureBackgroundColorNotEqualToForegroundColor(tmpString);
+
                 }
                 aPos = mIndex + 1;
 // now we have the color, send text that is in that color (up to next escape)
@@ -95,6 +96,19 @@ public class ColorPane extends JTextPane {
 
             } // while there's text in the input buffer
         }
+    }
+    private Color ensureBackgroundColorNotEqualToForegroundColor(Color color) {
+        if (color.equals(getBackground())) {
+            return new Color(255 - color.getRed(), 255 - color.getGreen(), 255 - color.getBlue());
+        }
+        return color;
+    }
+    private Color ensureBackgroundColorNotEqualToForegroundColor(String color) {
+        Color c = getANSIColor(color);
+        if (color.equals(getBackground())) {
+            return new Color(255 - c.getRed(), 255 - c.getGreen(), 255 - c.getBlue());
+        }
+        return c;
     }
 
     public Color getANSIColor(String ANSIColor) {
@@ -124,5 +138,19 @@ public class ColorPane extends JTextPane {
         else if (ANSIColor.equals("u001B[1;37m")) { return B_White; }
         else if (ANSIColor.equals("u001B[0m"))    { return cReset; }
         else { return Color.MAGENTA; }
+    }
+    @Override
+    public void setText(String s) {
+        if (s == null) {
+            colorCurrent = cReset;
+            super.setText(null);
+        } else {
+           super.setText(s);
+        }
+    }
+    @Override
+    public void setForeground(Color c) {
+        colorCurrent = c;
+        super.setForeground(c);
     }
 }

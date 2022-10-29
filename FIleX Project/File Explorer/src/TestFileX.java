@@ -24,7 +24,7 @@ public class TestFileX {
     public void TestGetFiles() throws IOException {
         FileX XPlorer = new FileX();
         //XPlorer.changeWorkingDirectory(XPlorer.getWorkingDirectory() + "/C");
-        XPlorer.print(XPlorer.getWorkingPath());
+        XPlorer.print(XPlorer.getWorkingPath(), true);
         //String[] expected = new String[]{"Hello world.c"}
     }
     @Test

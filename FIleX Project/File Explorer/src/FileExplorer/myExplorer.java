@@ -27,7 +27,7 @@ public interface myExplorer {
 
     /** Prints all files in the current directory
      * @return*/
-    String print(String currentPath) throws IOException;
+    String print(String currentPath, boolean format) throws IOException;
 
     /** Prints all files in current and sub-directories
      * @return*/
@@ -38,5 +38,8 @@ public interface myExplorer {
     String convert(String cmd) throws MyException, IOException;
 
     /** Navigate back to home directory */
+    void toHome();
+
+    /** Navigate back to the root directory */
     void toRoot();
 }

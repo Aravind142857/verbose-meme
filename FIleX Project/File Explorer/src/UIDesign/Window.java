@@ -1,19 +1,21 @@
 package UIDesign;
-import FileExplorer.ColorPane;
-import FileExplorer.Main;
-import FileExplorer.MyListener;
+import FileExplorer.*;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 import java.awt.*;
-import java.awt.event.FocusEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.lang.constant.MethodTypeDesc;
+import java.awt.event.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class Window extends JFrame {
-    private final Color LEFT_PANE_COLOR = Color.BLACK;
-    private final Color TOP_PANE_COLOR = Color.BLUE;
+    private final Color LEFT_PANE_FG_COLOR = Color.getHSBColor(40, 255, 120);
+    private final Color LEFT_PANE_COLOR = new Color(10,200,150);
+    private final Color TOP_PANE_COLOR = new Color(95, 187, 249);
     private final Color BOTTOM_PANE_BG_COLOR = Color.black;
     private final Color BOTTOM_PANE_FG_COLOR = Color.BLACK;
     public final Color DIRECTORY_COLOR = Color.BLUE;
@@ -22,14 +24,24 @@ public class Window extends JFrame {
     JPanel leftPane;
     JPanel topPane;
     ColorPane bottomPane;
-    JTextArea textBox;
+    ColorPane textBox;
     Main explorer;
+    JFrame tempFrame;
+    FileX FileXBottomPanel = new FileX();
+    FileX FileXTopPanel = new FileX();
+    public int x = 0;
     public Window(Main main) {
+
         explorer = main;
 
         /** Creating Condensed View Panel = Panel 3 */
+        //leftPane = new JPanel();
         leftPane = new JPanel();
+        //leftPane.setForeground(LEFT_PANE_FG_COLOR);
         leftPane.setBackground(LEFT_PANE_COLOR);
+        leftPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        /** Adding a ScrollPane to leftPane */
 
         /** Creating Expanded Visualizer = Panel 1 */
         topPane = new JPanel();
@@ -46,10 +58,10 @@ public class Window extends JFrame {
 
 
         /** Adding a ScrollPane to bottomPane */
-        JScrollPane sp = new JScrollPane(bottomPane);
-        sp.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        sp.getVerticalScrollBar().setBackground(Color.RED);
-        sp.getVerticalScrollBar().setUI(new BasicScrollBarUI() {
+        JScrollPane spB = new JScrollPane(bottomPane);
+        spB.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        spB.getVerticalScrollBar().setBackground(Color.RED);
+        spB.getVerticalScrollBar().setUI(new BasicScrollBarUI() {
             @Override
             protected void configureScrollBarColors() {
                 this.thumbColor = Color.GREEN;
@@ -57,44 +69,12 @@ public class Window extends JFrame {
         });
 
         /** Creating Text Box */
-        textBox = new JTextArea();
-        textBox.setRows(1);
-        textBox.addKeyListener(new MyListener() {
+        textBox = new ColorPane();
+        //textBox.setRows(1);
+        textBox.addKeyListener(new KeyListener() {
             StringBuilder command = new StringBuilder();
             int startPressed = 0;
 
-            /**
-             * Invoked when a component gains the keyboard focus.
-             *
-             * @param e the event to be processed
-             */
-            @Override
-            public void focusLost(FocusEvent e) {
-                /*
-                if(textBox.getText().trim().equals("")) {
-                    textBox.setText("Enter a command here. Eg. pwd");
-                    System.out.println("Focus lost");
-                } else {
-                     //ignore
-                }
-                */
-            }
-
-            /**
-             * Invoked when a component loses the keyboard focus.
-             *
-             * @param e the event to be processed
-             */
-            @Override
-            public void focusGained(FocusEvent e) {
-                /*if(textBox.getText().trim().equals("Enter a command here. Eg. pwd")) {
-                    textBox.setText("");
-                    System.out.println("Focus gained");
-                } else {
-                    // ignore
-                }
-                */
-            }
             /**
              * Invoked when a key has been typed.
              * See the class description for {@link KeyEvent} for a definition of
@@ -104,11 +84,14 @@ public class Window extends JFrame {
              */
             @Override
             public void keyTyped(KeyEvent e) {
+                /*if (!bottomPane.hasFocus()) {
+                    bottomPane.requestFocus();
+
+                }*/
                 int cursorIndex = textBox.getCaretPosition();
                 //System.out.println(1 + " " + cursorIndex + " " + command);
-
                 //System.out.println(cursorIndex);
-                if (e.getExtendedKeyCode() != 10 && e.getExtendedKeyCode() != 8) {
+                if (e.getExtendedKeyCode() != 10 && e.getExtendedKeyCode() != 8 && e.getExtendedKeyCode() != 9) {
                     if (cursorIndex == command.length()) {
                         command.append(e.getKeyChar());
                     } else {
@@ -153,11 +136,67 @@ public class Window extends JFrame {
                         //command = "";
                     }
                 } else if (e.getKeyCode() == KeyEvent.VK_TAB) { /** Auto-complete */
-                    // if multiple possible files then print them, else change the halfcompleted user input file to file.
+                    ArrayList<String> temp = FileXBottomPanel.autocompleteFromIncompleteString(command.toString());
+                    if (temp.size() == 1) {
+                        String only = temp.get(0);
+                        command = new StringBuilder(only);
+                        textBox.setText(only);
+                    } else if (temp.size() > 1){
+                        //TODO: Maybe open a new frame with some implementation of showing possible strings.
+                        //TODO: Problem: Not able to trap tab key. Need some other way to override its function.
+                        tempFrame = new JFrame();
+                        GridLayout layout = new GridLayout(0, 3);
+                        JTextArea area = new JTextArea();
+                        area.setLayout(layout);
+                        temp.stream().map(s -> area.add(new JLabel(s)));
+                        tempFrame.add(area);
+                        tempFrame.setVisible(true);
+                        tempFrame.requestFocus();
+                    }
+                // if multiple possible files then print them, else change the halfcompleted user input file to file.
                     // command.replace(input, file);
                 }
+                //textBox.requestFocus();
             }
 
+        });
+        textBox.addFocusListener(new FocusListener() {
+
+            /**
+             * Invoked when a component gains the keyboard focus.
+             *
+             * @param e the event to be processed
+             */
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (textBox.getText().trim().equals("")) {
+                    textBox.setText("");
+                    textBox.insert("u001B[1;30m" + "Enter a command or 'help'." + "u001B[30m");
+                    textBox.setCaretPosition(0);
+                } else {
+                    //ignore
+                }
+
+            }
+
+            /**
+             * Invoked when a component loses the keyboard focus.
+             *
+             * @param e the event to be processed
+             */
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (tempFrame != null && tempFrame.isVisible()) {
+                    tempFrame.setVisible(false);
+                }
+                if (textBox.getText().trim().equals("Enter a command or 'help'.")) {
+                    textBox.setText(null);
+                    textBox.setForeground(Color.BLACK);
+                } else {
+                    // ignore
+                }
+
+            }
         });
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         /**
@@ -178,15 +217,36 @@ public class Window extends JFrame {
 
         /** Splitting Panes to match the desired view */
         JPanel panel = new JPanel();
+        TitledBorder title = new TitledBorder("text box");
+        title.setTitleJustification(TitledBorder.CENTER);
         panel.setLayout(new BorderLayout());
-        sp.setSize(525, 275);
-        JSplitPane splitBottom = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp, textBox);
-        splitBottom.setBorder(null);
+        spB.setSize(525, 275);
+        textBox.setBorder(title);
+        JSplitPane splitBottom = new JSplitPane(JSplitPane.VERTICAL_SPLIT, spB, textBox);
+        //splitBottom.setBorder(null);
         splitBottom.setDividerLocation(270);
         JSplitPane split1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, topPane, splitBottom);
         split1.setDividerLocation(375);
         split1.setBorder(null);
-        JSplitPane split2 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPane, split1);
+
+        JScrollPane spL = new JScrollPane(leftPane);
+        leftPane.setLayout(new BoxLayout(leftPane, BoxLayout.PAGE_AXIS));
+        for (JButton lbl: makeButtons(explorer.runCommand("ls -d */"))) {
+            leftPane.add(lbl);
+            leftPane.add(Box.createRigidArea(new Dimension(5, 2)));
+        }
+        //leftPane.setVisible(true);
+        JSplitPane split2 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, spL, split1);
+
+        spL.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        spL.getVerticalScrollBar().setBackground(Color.RED);
+        spL.getVerticalScrollBar().setUI(new BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                this.thumbColor = Color.GREEN;
+            }
+        });
+
         split2.setDividerLocation(225);
         split2.setBorder(null);
         add(split2);
@@ -198,19 +258,53 @@ public class Window extends JFrame {
         /** Make JFrame visible */
         setVisible(true);
     }
-    /*public void insert(String s) {
-        try {
-            Document doc = bottomPane.getDocument();
-            doc.insertString(doc.getLength(), s, null);
-        } catch(BadLocationException exc) {
-            exc.printStackTrace();
+
+    private ArrayList<MyButton> makeButtons(String cdOutput) {
+        ArrayList<MyButton> listOfFiles = (ArrayList<MyButton>) Arrays.stream(cdOutput.split("\n")).map(s -> new MyButton(s)).collect(Collectors.toList());
+        for (MyButton btn: listOfFiles) {
+            btn.addActionListener(e -> {
+                String directory = btn.getText();
+                try {
+                    String curr = FileXTopPanel.getWorkingPath();
+                    FileXTopPanel.toHome();
+                    FileXTopPanel.moveInward(directory);
+                    if (! FileXTopPanel.getWorkingPath().equals(curr)) {
+                        for (Component cmp: topPane.getComponents()) {
+                            if (cmp instanceof MyLabel lbl) {
+                                topPane.remove(lbl);
+                            }
+                        }
+                        String result = FileXTopPanel.print(FileXTopPanel.getWorkingPath(), false);
+                        for (MyLabel label: makeLabels(result)) {
+                            topPane.add(label);
+                        }
+                        topPane.revalidate();
+                        topPane.repaint();
+                    }
+
+                } catch (IOException ex) {
+                    System.out.println("OOPS!?");
+                } catch (MyException ex) {
+                    ex.printStackTrace();
+                }
+        });
         }
-    }*/
+        return listOfFiles;
+
+    }
+    private ArrayList<MyLabel> makeLabels(String cdOutput) {
+        ArrayList<MyLabel> listOfFiles = (ArrayList<MyLabel>) Arrays.stream(cdOutput.split("\n")).map(s -> new MyLabel(s)).collect(Collectors.toList());
+        return listOfFiles;
+    }
     private void outCommandToTextArea(String command) {
-        bottomPane.insert(command + "\n");
-        String s = explorer.runCommand(command);
-        bottomPane.insert(s + "\n");
-        bottomPane.insert(explorer.getPrompt());
+        try {
+            bottomPane.insert(command + "\n");
+            String s = explorer.runCommand(command);
+            bottomPane.insert(s + "\n");
+            TimeUnit.MILLISECONDS.sleep(50);
+            bottomPane.insert(explorer.getPrompt());
+        } catch (InterruptedException e) {
+        }
     }
 
 
@@ -228,21 +322,18 @@ public class Window extends JFrame {
  * CTRL + C to stop code
  *
  */
-/**
- *
- * At the end of ls -aR return the number of Files and number of directories found.
- * Instead of printing full path of directories, print abbreviated path and make hover over text option on right click to view path
- * Create New Listener: that implements FocusListener and KeyListener and add it to textBox.
- * public void focusLost(FocusEvent e) {
- *         if(txtFirstName.getText().trim().equals(""))
- *            txtFirstName.setText("Enter a command here. Eg. pwd");
- *         else
- *            //do nothing
- *     }
- * public void focusGained(FocusEvent e) {
- *         if(txtFirstName.getText().trim().equals("First name"))
- *            txtFirstName.setText("");
- *         else
- *            //do nothing
- *     }
+/* TODO: Put all folders first then files, maybe remove all hidden files.
+            Add Action Listener/ Click Listener to topPane as well to navigate into
+            subdirectories.
+            Sort items in topPane by type
+            Implement grid like structure to add storage and file extension in different columns
+            ADD MENU BAR, with preferences.
+            Add Scrollbar to topPane
+            Reduce height of leftPane and add Small Box to put a logo inside.
+            Implement help command in terminal view.
+            Add a bar at the top of topPane Panel that displays location of subdirectory relative to home
+            Maybe add icons in topPane to symbolize Folder/file
+            Welcome prompts in terminal
+            Options that navigates in topPane and leftPane using terminal?
+
  */
