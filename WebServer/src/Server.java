@@ -13,7 +13,7 @@ public class Server {
         ServerSocket listener = new ServerSocket(30000);
         loadUsers();
         while (true) {
-            nibba(listener);
+            runner(listener);
         }
     }
     public static void loadUsers() throws FileNotFoundException {
@@ -32,7 +32,7 @@ public class Server {
     public static User lookup(String username) {
         return users.get(username);
     }
-    public static void nibba(ServerSocket s) throws IOException {
+    public static void runner(ServerSocket s) throws IOException {
         Socket a = s.accept();
         //System.out.println("You have made a connection to port " + s.getLocalPort());
         String returnToClient = "";
@@ -94,9 +94,7 @@ public class Server {
 
 /** TODO:
  *      Write user class
- *      Write Client
  *      Store messages in an efficient data structure
- *      Obtain Sender and Receiver from Sender
  *      Exception if Sender is empty
  *      Exception if Sender not recognized
  *      Exception if Receiver not recognized
